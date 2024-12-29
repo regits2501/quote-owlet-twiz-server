@@ -1,0 +1,8 @@
+
+node_modules
+
+# Directrory that holds your private-key.pem and signed-certificate.pem files for making https requests to X
+encription/*
+
+# Holds X app credentials (key and secret) for testing localy
+environment/*

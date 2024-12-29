@@ -1,0 +1,20 @@
+{
+  "name": "quote-owlet-twiz-server",
+  "version": "1.0.0",
+  "description": " twiz-server for Quote owlet frontend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start-local": "sudo bash ./environment/localenv.bash"
+  },
+  "type": "module",
+  "author": "regits2501",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "twiz-server": "^1.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7"
+  }
+}
