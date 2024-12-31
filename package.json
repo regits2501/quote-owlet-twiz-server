@@ -5,12 +5,13 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "start-local": "sudo bash ./environment/localenv.bash"
+    "start-local": "./environment/localenv.bash"
   },
   "type": "module",
   "author": "regits2501",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.21.2",
     "twiz-server": "^1.0.0"
   },
