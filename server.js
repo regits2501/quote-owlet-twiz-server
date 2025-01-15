@@ -1,7 +1,7 @@
 import twizServer from 'twiz-server';
 import express from 'express'
-import  * as fs  from 'fs';
-import cors from 'cors';
+import * as fs from 'fs';
+import CORS from './src/network/CORS.js';
 
 
 
@@ -9,41 +9,63 @@ const app = express();
 
 
 
-let key; 
+let key;
 let cert;
 
 // TODO move loading keys to separete module
 try {
 
-    key =   process.env.HTTPS_KEY || fs.readFileSync('encription/private-key.pem')
-    cert =  process.env.HTTPS_CERT || fs.readFileSync('encription/certificate.pem')
+    key = process.env.HTTPS_KEY || fs.readFileSync('encription/private-key.pem')
+    cert = process.env.HTTPS_CERT || fs.readFileSync('encription/certificate.pem')
 
 } catch (err) {
     console.error("Unable to load KEY and CERT: ", error)
 }
 
 console.log("HTTPS_KEY: ", key)
-console.log("HTTPS_CERT: ", process.env.CONSUMER_SECRET)
+console.log("HTTPS_CERT: ", cert);
+
+console.log(`KEY: ${process.env.CONSUMER_KEY} \nSECRET: ${process.env.CONSUMER_SECRET}`);
 
 const twizer = twizServer({
 
     consumer_key: process.env.CONSUMER_KEY,
     consumer_secret: process.env.CONSUMER_SECRET,
 
-    key:  key,
-    cert: cert
+    //key:  key,
+    //cert: cert
 })
 
-// app.options('*', ( req, res) => {
+// CORS first part - in preflight set what is allowed for the root ('/')
+app.options('/', (req, res) => {
+    console.log('CORS 1 (firstpart) \n');
 
-//     console.log('Options: reguest:', req)
+    const cors = new CORS(req, res, {
+        allow: {
+            origin: req.headers.origin,
+            methods: 'POST, GET, HEAD',
+            headers: 'content-type, Authorization, Allow'
+        }
+    });
 
-// });
+    cors.prefligh(); // send preflight resposnse
+});
 
-app.use(cors({
-    headers: ['Content-Type'],
-    methods: ['GET', 'POST']
-}));
+// CORS second part - set acccess-control-allow-origin
+app.use('/', (req, res, next) => {
+
+    console.log('CORS 2 (second) part \n')
+
+    const cors = new CORS(req, res);
+
+    cors.setAccessControlHeaders({
+        allow: {
+            origin: req.headers.origin
+        }
+    });
+
+    next();  // call nex middl. function (don't flush response)
+})
 
 app.use(twizer);                                          // use the twiz-server
 
@@ -61,15 +83,22 @@ app.on('hasteOrOAuth', async function (twiz, verifyCredentials) { // event where
     } catch (err) {
         console.log('continureOAuth')
         // When you don't have access token (or don't want to use haste) you hit complete 3 leg OAuth flow
-        twiz.continueOAuth()
+        twiz.continueOAuth();
     }
 })
 
-app.on('tokenFound', async function (token) { // When whole oauth process is finished you get the user' access token 
-    console.log('event:: "tokenFound"')
+app.on('tokenFound', async function (token, twiz) { // When whole oauth process is finished you get the user' access token 
+    
+    console.log('event:: "tokenFound"');
+    console.log('event:: "      token:', token);
+
     try {
         let accessToken = await token; // user's access token received from X which you can put in database
-        console.log(`Token found - access token: ${accessToken}`)
+
+        
+        twiz.onEnd(function setUserName(apiData, res){
+           console.log(' ======> twiz.onEnd(): apiData: ', apiData) // accessToken.screen_name
+        })
 
     } catch (err) {
         console.log(`TokenFound error: ${err}`)
@@ -78,6 +107,6 @@ app.on('tokenFound', async function (token) { // When whole oauth process is fin
 
 let port = process.env.PORT || 5000;
 
-app.listen( port, () => {
-   console.log(`\n Starting quote-owlet-twiz-server: PORT = ${port} `);
+app.listen(port, () => {
+    console.log(`\n Starting quote-owlet-twiz-server: PORT = ${port} `);
 })

@@ -18,6 +18,8 @@ export default class CORS {
      this.send();
    }
 
+   
+
    setAccessControlHeaders(config){
      
      const { 
@@ -25,9 +27,8 @@ export default class CORS {
         methods, 
         headers
 
-    } = config;
+    } = config.allow;
 
-     
      const control = 'Access-Control-Allow-';
 
      // restrict to required domain
