@@ -81,7 +81,7 @@ app.on('hasteOrOAuth', async function (twiz, verifyCredentials) { // event where
         twiz.haste(accessToken)   // Gets api data end sends back to browser
 
     } catch (err) {
-        console.log('continureOAuth')
+        console.log('continueOAuth')
         // When you don't have access token (or don't want to use haste) you hit complete 3 leg OAuth flow
         twiz.continueOAuth();
     }
@@ -89,20 +89,26 @@ app.on('hasteOrOAuth', async function (twiz, verifyCredentials) { // event where
 
 app.on('tokenFound', async function (token, twiz) { // When whole oauth process is finished you get the user' access token 
     
-    console.log('event:: "tokenFound"');
-    console.log('event:: "      token:', token);
+    twiz.onEnd(async function setUserName(apiData, res){
+        // set screen_name (user name)
 
-    try {
+        apiData.screen_name =  (await token).screen_name;
+        console.log(' ======> twiz.onEnd(): apiData: ', apiData) // accessToken.screen_name
+
+        response.setHeader('Content-Type', 'application/json');
+        response.setHeader('Content-Length', Buffer.byteLength(apiData));
+        res.end(JSON.stringify(apiData));
+     })
+
+     try {
         let accessToken = await token; // user's access token received from X which you can put in database
-
+        console.log('event:: tokenFound " token:', accessToken);
         
-        twiz.onEnd(function setUserName(apiData, res){
-           console.log(' ======> twiz.onEnd(): apiData: ', apiData) // accessToken.screen_name
-        })
-
     } catch (err) {
         console.log(`TokenFound error: ${err}`)
     }
+    
+    
 })
 
 let port = process.env.PORT || 5000;
