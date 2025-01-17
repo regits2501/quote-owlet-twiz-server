@@ -3,11 +3,15 @@ import express from 'express'
 import * as fs from 'fs';
 import CORS from './src/network/CORS.js';
 
-
+// IMport deps for /proxy route
+ import{  
+    getClientAddress, 
+    throttleRate,
+    processRequest,
+    proxyConfig
+ } from './src/proxy/Proxy.js'
 
 const app = express();
-
-
 
 let key;
 let cert;
@@ -35,6 +39,34 @@ const twizer = twizServer({
     //key:  key,
     //cert: cert
 })
+
+
+
+// Set up the /proxy route
+app.use('/proxy', (req, res) => {  console.log('in /getquote: url', req.url)
+    const clientIP = getClientAddress(req);
+    req.clientIP = clientIP;
+
+    if (proxyConfig.enable_logging) {
+        console.log(`${new Date().toJSON()} ${clientIP} ${req.method} ${req.url}`);
+    }
+
+    if (proxyConfig.enable_rate_limiting) {
+
+        throttleRate.rateLimit(clientIP, (err, limited) => {
+                         console.log('throtleRate.rateLimit')
+            if (limited) {
+                return writeResponse(res, 429, "Enhance your calm");
+            }
+
+            processRequest(req, res);
+        });
+    } else {
+        processRequest(req, res);
+    }
+});
+
+/////////////////////////////////////////////////////////////////////////////////////
 
 // CORS first part - in preflight set what is allowed for the root ('/')
 app.options('/', (req, res) => {
