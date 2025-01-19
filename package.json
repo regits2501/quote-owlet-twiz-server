@@ -4,7 +4,8 @@
   "description": " twiz-server for Quote owlet frontend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    
+    "start": "./environment/localenv.bash",
     "start-local": "./environment/localenv.bash"
   },
   "type": "module",
@@ -18,6 +19,11 @@
     "public-address": "^0.1.1",
     "twiz-server": "file:twiz-server-1.0.0-beta.3.tgz"
   },
+
+  "engines": {
+  "node": "22.x"
+  },
+
   "devDependencies": {
     "axios": "^1.7.9",
     "dotenv": "^16.4.7"
