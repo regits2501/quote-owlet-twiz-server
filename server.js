@@ -127,8 +127,8 @@ app.on('tokenFound', async function (token, twiz) { // When whole oauth process 
         apiData.screen_name =  (await token).screen_name;
         console.log(' ======> twiz.onEnd(): apiData: ', apiData) // accessToken.screen_name
 
-        response.setHeader('Content-Type', 'application/json');
-        response.setHeader('Content-Length', Buffer.byteLength(apiData));
+        res.setHeader('Content-Type', 'application/json');
+        
         res.end(JSON.stringify(apiData));
      })
 
