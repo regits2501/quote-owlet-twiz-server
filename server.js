@@ -1,15 +1,15 @@
-import twizServer from 'twiz-server';
+import xwizServer from 'xwiz-server';
 import express from 'express'
 import * as fs from 'fs';
 import CORS from './src/network/CORS.js';
 
 // IMport deps for /proxy route
- import{  
-    getClientAddress, 
+import {
+    getClientAddress,
     throttleRate,
     processRequest,
     proxyConfig
- } from './src/proxy/Proxy.js'
+} from './src/proxy/Proxy.js'
 
 const app = express();
 
@@ -31,19 +31,20 @@ console.log("HTTPS_CERT: ", cert);
 
 console.log(`KEY: ${process.env.CONSUMER_KEY} \nSECRET: ${process.env.CONSUMER_SECRET}`);
 
-const twizer = twizServer({
+const xwizer = xwizServer({
 
     consumer_key: process.env.CONSUMER_KEY,
     consumer_secret: process.env.CONSUMER_SECRET,
-
-    //key:  key,
-    //cert: cert
 })
 
 
 
-// Set up the /proxy route
-app.use('/proxy', (req, res) => {  console.log('in /getquote: url', req.url)
+/*
+    proxy route ,can be used for any kind of proxy, 
+    here used for going to a random quotes server
+*/
+app.use('/proxy', (req, res) => {
+    console.log('in /getquote: url', req.url)
     const clientIP = getClientAddress(req);
     req.clientIP = clientIP;
 
@@ -54,7 +55,7 @@ app.use('/proxy', (req, res) => {  console.log('in /getquote: url', req.url)
     if (proxyConfig.enable_rate_limiting) {
 
         throttleRate.rateLimit(clientIP, (err, limited) => {
-                         console.log('throtleRate.rateLimit')
+            console.log('throtleRate.rateLimit')
             if (limited) {
                 return writeResponse(res, 429, "Enhance your calm");
             }
@@ -69,7 +70,7 @@ app.use('/proxy', (req, res) => {  console.log('in /getquote: url', req.url)
 /////////////////////////////////////////////////////////////////////////////////////
 
 // CORS first part - in preflight set what is allowed for the root ('/')
-app.options('/', (req, res) => {
+app.options('*', (req, res) => {
     console.log('CORS 1 (firstpart) \n');
 
     const cors = new CORS(req, res, {
@@ -84,7 +85,7 @@ app.options('/', (req, res) => {
 });
 
 // CORS second part - set acccess-control-allow-origin
-app.use('/', (req, res, next) => {
+app.use('*', (req, res, next) => {
 
     console.log('CORS 2 (second) part \n')
 
@@ -99,52 +100,56 @@ app.use('/', (req, res, next) => {
     next();  // call nex middl. function (don't flush response)
 })
 
-app.use(twizer);                                          // use the twiz-server
+app.use('/xwiz-server', xwizer);                                          // use the xwiz-server
 
-app.on('hasteOrOAuth', async function (twiz, verifyCredentials) { // event where we pick haste or oauth
+app.on('hasteOrOAuth', async function (xwiz, verifyCredentials) { // event where we pick haste or oauth
     console.log('event :: "hasteOrOAuth"')
 
-    try {
+    try {  
 
-        // Go for access token in your database, if found go for verifyCredentials() --> twiz.haste()
-        if (!accessToken) throw "User's access token not found";
+        // Go for access token in your database, if found go for verifyCredentials() --> xwiz.haste()
+         if (!accessToken) throw "User's access token not found";
 
         let credentials = await verifyCredentials(accessToken, { skip_status: true })
-        twiz.haste(accessToken)   // Gets api data end sends back to browser
+        console.log('credentails ==::::==> ', credentials);
+
+        xwiz.haste(accessToken)   // Gets a api data end sends back to browser
 
     } catch (err) {
+        
         console.log('continueOAuth')
         // When you don't have access token (or don't want to use haste) you hit complete 3 leg OAuth flow
-        twiz.continueOAuth();
+        xwiz.continueOAuth();
     }
 })
 
-app.on('tokenFound', async function (token, twiz) { // When whole oauth process is finished you get the user' access token 
-    
-    twiz.onEnd(async function setUserName(apiData, res){
+app.on('tokenFound', async function (token, xwiz) { // When oauth process is finished you get the user' access token 
+
+    xwiz.onEnd(async function setUserName(apiData, res) {
         // set screen_name (user name)
 
-        apiData.screen_name =  (await token).screen_name;
-        console.log(' ======> twiz.onEnd(): apiData: ', apiData) // accessToken.screen_name
+        apiData.screen_name = (await token).screen_name;
+        console.log(' ======> xwiz.onEnd(): apiData: ', apiData) // accessToken.screen_name
 
         res.setHeader('Content-Type', 'application/json');
-        
-        res.end(JSON.stringify(apiData));
-     })
 
-     try {
+        res.end(JSON.stringify(apiData));
+    })
+
+    try {
+        
         let accessToken = await token; // user's access token received from X which you can put in database
         console.log('event:: tokenFound " token:', accessToken);
-        
+
     } catch (err) {
         console.log(`TokenFound error: ${err}`)
     }
-    
-    
+
+
 })
 
 let port = process.env.PORT || 5000;
 
 app.listen(port, () => {
-    console.log(`\n Starting quote-owlet-twiz-server: PORT = ${port} `);
+    console.log(`\n Starting quote-owlet-xwiz-server: PORT = ${port} `);
 })
